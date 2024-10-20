@@ -15,16 +15,12 @@ app.use(cors());
 // Remote MongoDB connection function using Mongoose
 async function connectDB() {
     try {
-        const username = encodeURIComponent('singhutkarsh140603');  // Encode special characters in the username
-        const password = encodeURIComponent('Ram%401234');  // Encode special characters in the password
+        const username = encodeURIComponent('singhutkarsh140603');
+        const password = encodeURIComponent('Ram@1234');  // Ensure correct encoding of the password
 
         const uri = `mongodb://${username}:${password}@cluster0-shard-00-00.hjbcp.mongodb.net:27017,cluster0-shard-00-01.hjbcp.mongodb.net:27017,cluster0-shard-00-02.hjbcp.mongodb.net:27017/?ssl=true&replicaSet=atlas-jlbx1u-shard-0&authSource=admin&retryWrites=true&w=majority`;
 
-        await mongoose.connect(uri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            appName: 'Cluster0/e-comm',
-        });
+        await mongoose.connect(uri);
 
         console.log('MongoDB connection successful');
     } catch (error) {
@@ -34,6 +30,7 @@ async function connectDB() {
 }
 
 connectDB();
+
 
 // Define your MongoDB collections using Mongoose schemas
 const productSchema = new mongoose.Schema({
