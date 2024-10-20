@@ -7,7 +7,7 @@ export const ListProduct = () => {
     const [allproducts,setallproducts]=useState([]);
     function fetchinfo()
     {
-        fetch('https://e-commmerce-frontend5.onrender.com/allproducts').then((res)=>res.json())
+        fetch('https://e-commmerce-backend878.onrender.com/allproducts').then((res)=>res.json())
         .then((data)=>{setallproducts(data)});
     }
     useEffect(()=>{
@@ -17,7 +17,7 @@ export const ListProduct = () => {
     const Removeproduct = async (id) => {
         console.log('Removing product with ID:', id); // Log the ID
         try {
-            const response = await fetch('https://e-commmerce-frontend5.onrender.com/removeProduct', {
+            const response = await fetch('https://e-commmerce-backend878.onrender.com/removeProduct', {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
