@@ -17,7 +17,7 @@ export function Shopcontextprovider(props){
     console.log(cartitems);
     const [all_product,setallproduct]=useState([]);
     useEffect(() => {
-        fetch('http://localhost:4000/allproducts')
+        fetch('https://e-commmerce-backend-fv5o.onrender.com/allproducts')
           .then((response) => response.json()) // Parse the JSON from the response
           .then((data) => {
             setallproduct(data); // Set the received data to allproduct state
@@ -29,7 +29,7 @@ export function Shopcontextprovider(props){
           if(localStorage.getItem('auth-token'))
           {
             
-            fetch('http://localhost:4000/getcart', {
+            fetch('https://e-commmerce-backend-fv5o.onrender.com/getcart', {
                 method: 'POST',
                 headers: {
                   Accept: 'application/form-data',
@@ -58,7 +58,7 @@ export function Shopcontextprovider(props){
         setcartitems(updatedCartItems); 
         if(localStorage.getItem('auth-token'))
         {
-            fetch('http://localhost:4000/addtocart',{
+            fetch('https://e-commmerce-backend-fv5o.onrender.com/addtocart',{
                 method:'POST',
                 headers:{
                  Accept :'application/form-data',
@@ -81,7 +81,7 @@ export function Shopcontextprovider(props){
         setcartitems(updatedCartItems); 
         if(localStorage.getItem('auth-token'))
         {
-            fetch('http://localhost:4000/removefromcart',{
+            fetch('https://e-commmerce-backend-fv5o.onrender.com/removefromcart',{
                 method:'POST',
                 headers:{
                  Accept :'application/form-data',
