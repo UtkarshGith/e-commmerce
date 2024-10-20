@@ -6,7 +6,7 @@ import { Item } from '../Items/Item'
 export const Popular = () => {
    const[popularinwomen,setpopularinwomen]=useState([]);
   useEffect(() => {
-    fetch('http://localhost:4000/popularinwomen')
+    fetch('https://e-commmerce-backend-fv5o.onrender.com/popularinwomen')
       .then((response) => response.json())
       .then((data) => setpopularinwomen(data))
       .catch((error) => console.error('Error fetching new collections:', error));
