@@ -10,7 +10,7 @@ export const LoginSignUp = () => {
     const login=async ()=>{
         let responsedata;
         try {
-            const response = await fetch('http://localhost:4000/login', {
+            const response = await fetch('https://e-commmerce-backend-fv5o.onrender.com/login', {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json', // Changed from form-data to json
@@ -34,7 +34,7 @@ export const LoginSignUp = () => {
     const signup = async (req,res) => {
         let responsedata;
         try {
-            const response = await fetch('http://localhost:4000/signup', {
+            const response = await fetch('https://e-commmerce-backend-fv5o.onrender.com/signup', {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json', // Changed from form-data to json
