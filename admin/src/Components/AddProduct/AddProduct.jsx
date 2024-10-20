@@ -28,7 +28,7 @@ const AddProduct = () => {
         formData.append('product', image);
       
         // First request to upload the image
-        fetch('https://e-commmerce-backend878.onrender.com/upload', {
+        fetch('https://e-commmerce-backend43214.onrender.com/upload', {
           method: 'POST',
           headers: {
             Accept: 'application/json',
@@ -43,7 +43,7 @@ const AddProduct = () => {
               console.log(product); // Product object with image URL
       
               // Second request to add the complete product details (with image URL)
-              return fetch('https://e-commmerce-backend878.onrender.com/addproduct', {
+              return fetch('https://e-commmerce-backend43214.onrender.com/addproduct', {
                 method: 'POST',
                 headers: {
                   Accept: 'application/json',
