@@ -1,68 +1,82 @@
+const port = 4000;
 const express = require("express");
-const { MongoClient } = require("mongodb");
+const mongoose = require("mongoose");
+const app = express();
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcrypt');
 const multer = require("multer");
 const path = require("path");
 const cors = require("cors");
-const { ObjectId } = require("mongodb");
-
-const app = express();
-const port = process.env.PORT || 4000; // Use the environment port or default to 4000
+const { ObjectId } = require('mongodb');
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 
-// Database connection URL and client configuration
-const uri = "mongodb+srv://singhutkarsh140603:Ram%401234@cluster0.mongodb.net/e-commerce-backend?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-
-// Initialize variables for the database and collections
-let db;
-let collection, userCollection;
-
-// Database connection function
+// Remote MongoDB connection function using Mongoose
 async function connectDB() {
     try {
-        await client.connect();
-        console.log("Connected to MongoDB successfully");
+        const username = encodeURIComponent('singhutkarsh140603');
+        const password = encodeURIComponent('Ram@1234');  // Ensure correct encoding of the password
 
-        // Set the database and collections
-        db = client.db("e-commerce-backend");
-        collection = db.collection("Product");
-        userCollection = db.collection("user");
-    } catch (err) {
-        console.error("MongoDB connection error:", err);
+        const uri = `mongodb://${username}:${password}@cluster0-shard-00-00.hjbcp.mongodb.net:27017,cluster0-shard-00-01.hjbcp.mongodb.net:27017,cluster0-shard-00-02.hjbcp.mongodb.net:27017/?ssl=true&replicaSet=atlas-jlbx1u-shard-0&authSource=admin&retryWrites=true&w=majority`;
+
+        await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+        console.log('MongoDB connection successful');
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
         process.exit(1); // Exit the process if connection fails
     }
 }
 
-// Call the connectDB function to establish the connection
 connectDB();
 
+// Define your MongoDB collections using Mongoose schemas
+const productSchema = new mongoose.Schema({
+    id: Number,
+    name: String,
+    image: String,
+    category: String,
+    new_price: Number,
+    old_price: Number,
+    date: { type: Date, default: Date.now },
+    available: Boolean,
+});
+
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: String,
+    password: String,
+    cartData: Object,
+    date: { type: Date, default: Date.now },
+});
+
+const Product = mongoose.model('Product', productSchema);
+const User = mongoose.model('User', userSchema);
+
 // API Creation
-app.get("/", (req, res) => {
+app.get('/', (req, res) => {
     res.send("Express App is running");
 });
 
 // Image Storage Engine
 const storage = multer.diskStorage({
-    destination: "./upload/images",
+    destination: './upload/images',
     filename: (req, file, cb) => {
-        cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`);
-    },
+        return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`);
+    }
 });
 
 const upload = multer({ storage: storage });
-app.use("/images", express.static("upload/images"));
+app.use('/images', express.static('upload/images'));
 
-// Creating upload Endpoint
-app.post("/upload", upload.single("product"), (req, res) => {
+// API for uploading images
+app.post("/upload", upload.single('product'), (req, res) => {
     console.log(req.file.filename);
     res.json({
         success: 1,
-        image_url: `http://localhost:${port}/images/${req.file.filename}`,
+        image_url: `http://localhost:${port}/images/${req.file.filename}`
     });
 });
 
@@ -71,25 +85,31 @@ app.post("/addproduct", async (req, res) => {
     try {
         let productId = req.body.id;
 
-        // If the id is not provided, find the highest id in the collection and increment it
+        // If no id is provided, find the highest id in the collection and increment it
         if (!productId) {
-            const lastProduct = await collection.find().sort({ id: -1 }).limit(1).toArray();
-            productId = lastProduct.length > 0 ? lastProduct[0].id + 1 : 1;
+            const lastProduct = await Product.find().sort({ id: -1 }).limit(1);
+
+            if (lastProduct.length > 0) {
+                productId = lastProduct[0].id + 1;
+            } else {
+                productId = 1;
+            }
         }
 
-        const product = {
+        // Create and save the new product
+        const product = new Product({
             id: productId,
             name: req.body.name,
             image: req.body.image,
             category: req.body.category,
             new_price: req.body.new_price,
             old_price: req.body.old_price,
-            date: new Date(),
             available: true,
-        };
+        });
 
-        await collection.insertOne(product);
+        await product.save();
         console.log("Product saved:", product);
+
         res.json({
             success: true,
             name: req.body.name,
@@ -101,43 +121,35 @@ app.post("/addproduct", async (req, res) => {
     }
 });
 
-// API for removing product
+// API for removing products
 app.post("/removeProduct", async (req, res) => {
     const productId = req.body.id;
     if (!productId) {
-        return res.status(400).json({
-            success: false,
-            message: "Product id is required",
-        });
+        return res.status(400).json({ success: false, message: "Product id is required" });
     }
-    const result = await collection.deleteOne({ id: productId });
+
+    const result = await Product.deleteOne({ id: productId });
     if (result.deletedCount === 1) {
         res.json({ success: true, message: `Product with id ${productId} removed` });
     } else {
-        console.log(`No product found with id ${productId}`);
         res.status(404).json({ success: false, message: "Product not found" });
     }
 });
 
-// Endpoint to get all products
+// Get all products
 app.get("/allproducts", async (req, res) => {
-    try {
-        const allProducts = await collection.find().toArray();
-        console.log("All Products Fetched");
-        res.json(allProducts);
-    } catch (error) {
-        console.error("Error fetching all products:", error);
-        res.status(500).json({ success: false, message: "Error fetching products" });
-    }
+    const allProducts = await Product.find();
+    console.log("All Products Fetched");
+    res.send(allProducts);
 });
 
-// User Signup Endpoint
-app.post("/signup", async (req, res) => {
+// API for user signup
+app.post('/signup', async (req, res) => {
     try {
         const { username: name, email, password } = req.body;
 
         // Check if the user already exists
-        const existingUser = await userCollection.findOne({ email });
+        const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -145,7 +157,7 @@ app.post("/signup", async (req, res) => {
             });
         }
 
-        // Hash the password before storing
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Initialize cart data
@@ -154,117 +166,114 @@ app.post("/signup", async (req, res) => {
             cart[i] = 0;
         }
 
-        const newUser = {
+        // Save new user
+        const newUser = new User({
             name,
             email,
             password: hashedPassword,
             cartData: cart,
-            date: new Date(),
-        };
-
-        await userCollection.insertOne(newUser);
-
-        const data = {
-            user: {
-                id: newUser._id,
-            },
-        };
-        const token = jwt.sign(data, "secret_ecom");
-
-        res.json({
-            success: true,
-            token,
         });
+
+        await newUser.save();
+
+        // Generate JWT token
+        const token = jwt.sign({ id: newUser._id }, 'secret_ecom', { expiresIn: '1h' });
+
+        res.json({ success: true, token });
     } catch (error) {
         console.error("Error during user signup:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
+        res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
-// Endpoint for user login
-app.post("/login", async (req, res) => {
+// API for user login
+app.post('/login', async (req, res) => {
     try {
-        const user = await userCollection.findOne({ email: req.body.email });
-
+        const user = await User.findOne({ email: req.body.email });
         if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid email address",
-            });
+            return res.status(400).json({ success: false, message: "Invalid email address" });
         }
 
+        // Check the password
         const isPasswordMatch = await bcrypt.compare(req.body.password, user.password);
-
         if (!isPasswordMatch) {
-            return res.status(400).json({
-                success: false,
-                message: "Incorrect password",
-            });
+            return res.status(400).json({ success: false, message: "Incorrect password" });
         }
 
-        const data = {
-            user: {
-                id: user._id,
-            },
-        };
-        const token = jwt.sign(data, "secret_ecom", { expiresIn: "1h" });
-
-        res.json({
-            success: true,
-            token,
-        });
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id }, 'secret_ecom', { expiresIn: '1h' });
+        res.json({ success: true, token });
     } catch (error) {
         console.error("Error during login:", error);
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
+        res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
-// Middleware to fetch user
-const fetchUser = async (req, res, next) => {
-    const token = req.header("auth-token");
+// API to fetch new collections
+app.get('/newcollections', async (req, res) => {
+    const products = await Product.find();
+    const newCollections = products.slice(-8);
+    console.log("New collections fetched");
+    res.send(newCollections);
+});
 
+// API to fetch popular products in women's category
+app.get('/popularinwomen', async (req, res) => {
+    const products = await Product.find({ category: "women" });
+    const popularInWomen = products.slice(0, 4);
+    console.log("Popular products in women category fetched");
+    res.send(popularInWomen);
+});
+
+// Middleware to authenticate user via token
+const fetchUser = async (req, res, next) => {
+    const token = req.header('auth-token');
     if (!token) {
         return res.status(401).send({ errors: "Please authenticate using a valid token" });
     }
 
     try {
-        const data = jwt.verify(token, "secret_ecom");
-        req.user = data.user;
+        const data = jwt.verify(token, 'secret_ecom');
+        req.user = data;
         next();
     } catch (error) {
-        console.error("JWT verification error:", error);
-        return res.status(401).send({ errors: "Please authenticate using a valid token" });
+        return res.status(401).send({ errors: "Token is not valid" });
     }
 };
 
-// Fetch user cart data
-app.post("/getcart", fetchUser, async (req, res) => {
+// API to add items to cart
+app.post('/addtocart', fetchUser, async (req, res) => {
     try {
-        const userId = new ObjectId(req.user.id);
-        let userData = await userCollection.findOne({ _id: userId });
+        const user = await User.findById(req.user.id);
+        const itemId = req.body.ItemId;
 
-        if (!userData) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
+        // Update cart data
+        user.cartData[itemId] = (user.cartData[itemId] || 0) + 1;
+        await user.save();
 
-        res.json(userData.cartData);
+        res.send("Added to cart");
+    } catch (error) {
+        console.error("Error adding to cart:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+    }
+});
+
+// API to get user cart data
+app.post('/getcart', fetchUser, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        res.json(user.cartData);
     } catch (error) {
         console.error("Error fetching user cart:", error);
         res.status(500).json({ success: false, message: "Server error" });
     }
 });
 
-// Start the server after the database connection is established
-app.listen(port, "0.0.0.0", (error) => { // Listen on 0.0.0.0 for external access
-    if (!error) {
-        console.log("Server Running On port " + port);
+// Start the server and bind to 0.0.0.0
+app.listen(port, '0.0.0.0', (error) => {
+    if (error) {
+        console.error("Error starting server:", error);
     } else {
-        console.log("Error" + error);
+        console.log(`Server is running on port ${port}`);
     }
 });
