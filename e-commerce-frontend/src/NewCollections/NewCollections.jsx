@@ -5,7 +5,7 @@ export const NewCollections = () => {
 
   const [new_colletions,setnewcollection]=useState([]);
   useEffect(() => {
-    fetch('http://localhost:4000/newcollections')
+    fetch('https://e-commmerce-backend-fv5o.onrender.com/newcollections')
       .then((response) => response.json())
       .then((data) => setnewcollection(data))
       .catch((error) => console.error('Error fetching new collections:', error));
