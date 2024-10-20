@@ -28,7 +28,7 @@ const AddProduct = () => {
         formData.append('product', image);
       
         // First request to upload the image
-        fetch('http://localhost:4000/upload', {
+        fetch('https://e-commmerce-frontend5.onrender.com/upload', {
           method: 'POST',
           headers: {
             Accept: 'application/json',
