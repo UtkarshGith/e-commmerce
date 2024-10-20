@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(cors());
 
 // Database connection URL and client
-const uri = "mongodb://localhost:127.0.0.1:27017";
+const uri = "mongodb://localhost:27017";
 const client = new MongoClient(uri);
 
 // Initialize a variable for the database
